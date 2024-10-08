@@ -27,6 +27,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public final class JavaLocator {
@@ -45,7 +46,7 @@ public final class JavaLocator {
      * @see System#getenv
      * @see Files#exists
      */
-    public static Path[] getJavaFromEnv() {
+    public static Path[] getJavaFromEnv(Consumer<InvalidPathException> onBadPath) {
         return JavaLocator.getJavaInFolders(
             System.getenv("PATH").split(File.pathSeparator),
             OperatingSystem.getCurrent().getJavaExecutableName(),
@@ -61,7 +62,7 @@ public final class JavaLocator {
      * @param verifier the installation verifier
      * @return the verified java installation paths
      */
-    public static Path[] getJavaInFolders(String[] folders, String exec, Predicate<Path> verifier) {
+    public static Path[] getJavaInFolders(String[] folders, String exec, Predicate<Path> verifier, Consumer<InvalidPathException> onBadPath) {
         Path[] paths = new Path[folders.length];
 
         int size = 0;
@@ -70,9 +71,8 @@ public final class JavaLocator {
 
             try {
                 path = Paths.get(bin, exec);
-            } catch (InvalidPathException e) {
-                Log.warn("Could not parse path: " + String.join(File.pathSeparator, bin, exec));
-
+            } catch (InvalidPathException cause) {
+                onBadPath.accept(cause);
                 continue;
             }
 
